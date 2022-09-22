@@ -1,7 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 const app = express();
-const { Post, User } = require("./db");
+const { Post, User, Bookmark, Category } = require("./db");
 
 app.use(morgan("dev"));
 // app.use(express.static(__dirname + "/public"));
@@ -10,23 +10,50 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/", async (req, res, next) => {
-  const posts = await Post.findAll({
-    include: [User],
+// app.get("/", async (req, res, next) => {
+//   const posts = await Post.findAll({
+//     include: [User],
+//   });
+
+//   res.send(
+//     `
+//        <body>
+//           ${posts
+//             .map(
+//               (post) =>
+//                 `<div>
+//                   <h2>
+//                     ${post.title}
+//                   </h2>
+//                   <h3>${post.user.name}</h3>
+//                   <p>${post.title}</p>
+//                 </div>`
+//             )
+//             .join("")}
+//         </body>
+//   `
+//   );
+// });
+app.get("/", (req, res) => {
+  res.redirect("/bookmark");
+});
+
+app.get("/bookmark", async (req, res, next) => {
+  const bookmarks = await Bookmark.findAll({
+    include: [Category],
   });
 
   res.send(
     `
        <body>
-          ${posts
+          ${bookmarks
             .map(
-              (post) =>
+              (bookmark) =>
                 `<div>
                   <h2>
-                    ${post.title}
+                    ${bookmark.name} - <a href="categories/${bookmark.category.id}">${bookmark.category.name}</a>
                   </h2>
-                  <h3>${post.user.name}</h3>
-                  <p>${post.title}</p>
+                  <a href="${bookmark.url}">${bookmark.url}</a>
                 </div>`
             )
             .join("")}
@@ -34,9 +61,27 @@ app.get("/", async (req, res, next) => {
   `
   );
 });
-// app.get("/", (req, res) => {
-//   res.redirect("/posts");
-// });
+
+app.get("/categories/:id", async (req, res, next) => {
+  const categories = await Category.findAll({
+    include: [Bookmark],
+  });
+  const singleCategory = categories.find(
+    (categorie) => categorie.id === +req.params.id
+  );
+  // console.log("single categorieeee ----->", singleCategory);
+  res.send(
+    `
+       <body>
+         <h1>${singleCategory.name}</h1>
+         <h2>${singleCategory.bookmarks
+           .map((bookmark) => `<li>${bookmark.name}</li>`)
+           .join("")}</h2>
+           <a href="/bookmark">Back</a>
+        </body>
+  `
+  );
+});
 
 const PORT = 1337;
 
