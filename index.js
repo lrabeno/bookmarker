@@ -39,48 +39,64 @@ app.get("/", (req, res) => {
 });
 
 app.get("/bookmark", async (req, res, next) => {
-  const bookmarks = await Bookmark.findAll({
-    include: [Category],
-  });
+  try {
+    const bookmarks = await Bookmark.findAll({
+      include: [Category],
+    });
 
-  res.send(
+    res.send(
+      `
+         <body>
+            ${bookmarks
+              .map(
+                (bookmark) =>
+                  `<div>
+                    <h2>
+                      ${bookmark.name} - <a href="categories/${bookmark.category.id}">${bookmark.category.name}</a>
+                    </h2>
+                    <a href="${bookmark.url}">${bookmark.url}</a>
+                  </div>`
+              )
+              .join("")}
+          </body>
     `
-       <body>
-          ${bookmarks
-            .map(
-              (bookmark) =>
-                `<div>
-                  <h2>
-                    ${bookmark.name} - <a href="categories/${bookmark.category.id}">${bookmark.category.name}</a>
-                  </h2>
-                  <a href="${bookmark.url}">${bookmark.url}</a>
-                </div>`
-            )
-            .join("")}
-        </body>
-  `
-  );
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/bookmark", async (req, res, next) => {
+  try {
+    res.status(201).send(await Bookmark.create(req.body));
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/categories/:id", async (req, res, next) => {
-  const categories = await Category.findAll({
-    include: [Bookmark],
-  });
-  const singleCategory = categories.find(
-    (categorie) => categorie.id === +req.params.id
-  );
-  // console.log("single categorieeee ----->", singleCategory);
-  res.send(
+  try {
+    const categories = await Category.findAll({
+      include: [Bookmark],
+    });
+    const singleCategory = categories.find(
+      (categorie) => categorie.id === +req.params.id
+    );
+    // console.log("single categorieeee ----->", singleCategory);
+    res.send(
+      `
+         <body>
+           <h1>${singleCategory.name}</h1>
+           <h2>${singleCategory.bookmarks
+             .map((bookmark) => `<li>${bookmark.name}</li>`)
+             .join("")}</h2>
+             <a href="/bookmark">Back</a>
+          </body>
     `
-       <body>
-         <h1>${singleCategory.name}</h1>
-         <h2>${singleCategory.bookmarks
-           .map((bookmark) => `<li>${bookmark.name}</li>`)
-           .join("")}</h2>
-           <a href="/bookmark">Back</a>
-        </body>
-  `
-  );
+    );
+  } catch (error) {
+    next(error);
+  }
 });
 
 const PORT = 1337;
