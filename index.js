@@ -10,30 +10,6 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// app.get("/", async (req, res, next) => {
-//   const posts = await Post.findAll({
-//     include: [User],
-//   });
-
-//   res.send(
-//     `
-//        <body>
-//           ${posts
-//             .map(
-//               (post) =>
-//                 `<div>
-//                   <h2>
-//                     ${post.title}
-//                   </h2>
-//                   <h3>${post.user.name}</h3>
-//                   <p>${post.title}</p>
-//                 </div>`
-//             )
-//             .join("")}
-//         </body>
-//   `
-//   );
-// });
 app.get("/", (req, res) => {
   res.redirect("/bookmark");
 });
@@ -52,12 +28,18 @@ app.get("/bookmark", async (req, res, next) => {
                 (bookmark) =>
                   `<div>
                     <h2>
-                      ${bookmark.name} - <a href="categories/${bookmark.category.id}">${bookmark.category.name}</a>
+                      ${bookmark.name} - <a href="categories/${bookmark.categoryId}">${bookmark.category.name}</a>
                     </h2>
                     <a href="${bookmark.url}">${bookmark.url}</a>
                   </div>`
               )
               .join("")}
+                  <form method="post" action="/bookmark">
+                    <input type="text" placeholder="Name" name="name" />
+                    <input type="text" placeholder="url" name="url" />
+                    <input type="text"placeholder="category"name="category"/>
+                    <button type="submit">Add Bookmark</button>
+                  </form>
           </body>
     `
     );
@@ -67,8 +49,20 @@ app.get("/bookmark", async (req, res, next) => {
 });
 
 app.post("/bookmark", async (req, res, next) => {
+  const category = await Category.findOne({
+    where: {
+      name: req.body.category,
+    },
+  });
+
   try {
-    res.status(201).send(await Bookmark.create(req.body));
+    res.status(201).send(
+      await Bookmark.create({
+        name: req.body.name,
+        url: req.body.url,
+        categoryId: category.id,
+      })
+    );
   } catch (error) {
     next(error);
   }
