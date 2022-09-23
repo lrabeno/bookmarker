@@ -9,6 +9,7 @@ app.use(morgan("dev"));
 // parses json bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(require("method-override")("_method"));
 
 app.get("/", (req, res) => {
   res.redirect("/bookmark");
@@ -31,6 +32,9 @@ app.get("/bookmark", async (req, res, next) => {
                       ${bookmark.name} - <a href="categories/${bookmark.categoryId}">${bookmark.category.name}</a>
                     </h2>
                     <a href="${bookmark.url}">${bookmark.url}</a>
+                    <form method='POST' action='/bookmark/${bookmark.id}?_method=DELETE'>
+                          <button>Delete Bookmark:</button>
+                          </form>
                   </div>`
               )
               .join("")}
@@ -54,15 +58,29 @@ app.post("/bookmark", async (req, res, next) => {
       name: req.body.category,
     },
   });
-
   try {
-    res.status(201).send(
+    res.send(
       await Bookmark.create({
         name: req.body.name,
         url: req.body.url,
         categoryId: category.id,
       })
     );
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/bookmark/:id", async (req, res, next) => {
+  try {
+    const bookmark = await Bookmark.findByPk(req.params.id);
+    if (!bookmark) {
+      res.sendStatus(404);
+    } else {
+      await bookmark.destroy();
+      // res.sendStatus(204); WHY CANT I SEND STATUS AND REDIRECT?
+      res.redirect("/");
+    }
   } catch (error) {
     next(error);
   }
